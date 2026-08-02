@@ -68,6 +68,17 @@ public sealed record CreateEmployeeRequest(
     [property: Required, EmailAddress, StringLength(254)] string Email,
     Guid DepartmentId);
 
+public sealed record DepartmentDto(Guid Id, string Code, string Name);
+
+public sealed record EmployeeDto(
+    Guid Id,
+    string EmployeeNumber,
+    string FullName,
+    string Email,
+    Guid DepartmentId,
+    string Department,
+    bool IsActive);
+
 public sealed record AssetDto(
     Guid Id,
     string AssetTag,
@@ -134,4 +145,3 @@ public sealed record ImportResultDto(
     int FailedRows,
     IReadOnlyList<string> Errors,
     bool Replayed);
-

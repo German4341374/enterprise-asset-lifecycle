@@ -7,6 +7,7 @@ namespace EnterpriseAssetLifecycle.Infrastructure;
 
 public sealed class ApiExceptionHandler(
     IProblemDetailsService problemDetailsService,
+    IHostEnvironment environment,
     ILogger<ApiExceptionHandler> logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
@@ -63,6 +64,9 @@ public sealed class ApiExceptionHandler(
         }
 
         httpContext.Response.StatusCode = status;
+        var responseDetail = status >= 500 && environment.IsEnvironment("Testing")
+            ? exception.ToString()
+            : detail;
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
@@ -71,7 +75,7 @@ public sealed class ApiExceptionHandler(
             {
                 Status = status,
                 Title = title,
-                Detail = detail,
+                Detail = responseDetail,
                 Instance = httpContext.Request.Path,
                 Extensions =
                 {
@@ -82,4 +86,3 @@ public sealed class ApiExceptionHandler(
         });
     }
 }
-

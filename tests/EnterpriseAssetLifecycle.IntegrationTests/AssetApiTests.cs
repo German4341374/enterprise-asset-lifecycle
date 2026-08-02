@@ -31,14 +31,14 @@ public sealed class AssetApiTests(PostgresFixture fixture)
     public async Task AssignmentAndReturn_CreateCustodyHistoryAndAuditEvents()
     {
         var asset = await CreateAssetAsync("FLOW");
-        var employees = await fixture.Client.GetFromJsonAsync<List<Employee>>("/api/employees", JsonOptions);
+        var employees = await fixture.Client.GetFromJsonAsync<List<EmployeeDto>>("/api/employees", JsonOptions);
         var employee = Assert.Single(employees!, x => x.EmployeeNumber == "EMP-1001");
 
         var assignResponse = await fixture.Client.PostAsJsonAsync(
             $"/api/assets/{asset.Id}/assign",
             new AssignAssetRequest(employee.Id, DateTimeOffset.UtcNow.AddDays(7), asset.Version, "integration-test"),
             JsonOptions);
-        assignResponse.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(assignResponse);
         var assigned = await assignResponse.Content.ReadFromJsonAsync<AssetDto>(JsonOptions);
         Assert.Equal(AssetState.Assigned, assigned!.State);
         Assert.Equal(employee.Id, assigned.ActiveAssignment!.EmployeeId);
@@ -47,7 +47,7 @@ public sealed class AssetApiTests(PostgresFixture fixture)
             $"/api/assets/{asset.Id}/return",
             new ReturnAssetRequest(assigned.Version, "integration-test", "Test return"),
             JsonOptions);
-        returnResponse.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(returnResponse);
         var returned = await returnResponse.Content.ReadFromJsonAsync<AssetDto>(JsonOptions);
         Assert.Equal(AssetState.InStock, returned!.State);
         Assert.Null(returned.ActiveAssignment);
@@ -63,14 +63,14 @@ public sealed class AssetApiTests(PostgresFixture fixture)
     public async Task StaleVersion_ReturnsProblemDetailsConflict()
     {
         var asset = await CreateAssetAsync("STALE");
-        var departments = await fixture.Client.GetFromJsonAsync<List<Department>>("/api/departments", JsonOptions);
+        var departments = await fixture.Client.GetFromJsonAsync<List<DepartmentDto>>("/api/departments", JsonOptions);
         var target = Assert.Single(departments!, x => x.Id != asset.DepartmentId && x.Code == "ENG");
 
         var first = await fixture.Client.PostAsJsonAsync(
             $"/api/assets/{asset.Id}/move",
             new MoveAssetRequest(target.Id, asset.Version, "integration-test"),
             JsonOptions);
-        first.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(first);
 
         var stale = await fixture.Client.PostAsJsonAsync(
             $"/api/assets/{asset.Id}/move",
@@ -89,9 +89,9 @@ public sealed class AssetApiTests(PostgresFixture fixture)
             $"/api/assets/{asset.Id}/retire",
             new RetireAssetRequest(asset.Version, "integration-test", "End of life"),
             JsonOptions);
-        retire.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(retire);
         var retired = await retire.Content.ReadFromJsonAsync<AssetDto>(JsonOptions);
-        var employees = await fixture.Client.GetFromJsonAsync<List<Employee>>("/api/employees", JsonOptions);
+        var employees = await fixture.Client.GetFromJsonAsync<List<EmployeeDto>>("/api/employees", JsonOptions);
 
         var assign = await fixture.Client.PostAsJsonAsync(
             $"/api/assets/{asset.Id}/assign",
@@ -108,13 +108,13 @@ public sealed class AssetApiTests(PostgresFixture fixture)
         var csv = $"assetTag,type,manufacturer,model,serialNumber,departmentCode,purchaseDate\n{tag},Laptop,Example,CSV Device,SN-{Guid.NewGuid():N},OPS,2026-01-15\n";
 
         var first = await ImportAsync(key, csv);
-        first.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(first);
         var firstResult = await first.Content.ReadFromJsonAsync<ImportResultDto>(JsonOptions);
         Assert.Equal(1, firstResult!.ImportedRows);
         Assert.False(firstResult.Replayed);
 
         var replay = await ImportAsync(key, csv);
-        replay.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(replay);
         var replayResult = await replay.Content.ReadFromJsonAsync<ImportResultDto>(JsonOptions);
         Assert.True(replayResult!.Replayed);
         Assert.Equal(firstResult.BatchId, replayResult.BatchId);
@@ -137,7 +137,7 @@ public sealed class AssetApiTests(PostgresFixture fixture)
     public async Task Export_ReturnsCsvWithExpectedHeader()
     {
         var response = await fixture.Client.GetAsync("/api/assets/export.csv");
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(response);
         Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
         var csv = await response.Content.ReadAsStringAsync();
         Assert.Contains("AssetTag,Type,Manufacturer", csv, StringComparison.Ordinal);
@@ -145,7 +145,7 @@ public sealed class AssetApiTests(PostgresFixture fixture)
 
     private async Task<AssetDto> CreateAssetAsync(string prefix)
     {
-        var departments = await fixture.Client.GetFromJsonAsync<List<Department>>("/api/departments", JsonOptions);
+        var departments = await fixture.Client.GetFromJsonAsync<List<DepartmentDto>>("/api/departments", JsonOptions);
         var operations = Assert.Single(departments!, x => x.Code == "OPS");
         var suffix = Guid.NewGuid().ToString("N")[..10];
         var response = await fixture.Client.PostAsJsonAsync(
@@ -159,7 +159,7 @@ public sealed class AssetApiTests(PostgresFixture fixture)
                 operations.Id,
                 new DateOnly(2026, 1, 1)),
             JsonOptions);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(response);
         return (await response.Content.ReadFromJsonAsync<AssetDto>(JsonOptions))!;
     }
 
@@ -171,5 +171,13 @@ public sealed class AssetApiTests(PostgresFixture fixture)
         request.Headers.Add("Idempotency-Key", key);
         request.Headers.Add("X-Actor", "integration-test");
         return await fixture.Client.SendAsync(request);
+    }
+
+    private static async Task EnsureSuccessAsync(HttpResponseMessage response)
+    {
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(
+            response.IsSuccessStatusCode,
+            $"Expected success but received {(int)response.StatusCode} {response.StatusCode}: {body}");
     }
 }

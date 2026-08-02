@@ -196,7 +196,9 @@ public static class ApiEndpoints
 
         var departments = api.MapGroup("/departments").WithTags("Departments");
         departments.MapGet("/", async (AssetDbContext db, CancellationToken cancellationToken) =>
-            Results.Ok(await db.Departments.AsNoTracking().OrderBy(x => x.Name).ToListAsync(cancellationToken)));
+            Results.Ok(await db.Departments.AsNoTracking().OrderBy(x => x.Name)
+                .Select(x => new DepartmentDto(x.Id, x.Code, x.Name))
+                .ToListAsync(cancellationToken)));
         departments.MapPost("/", async (
             CreateDepartmentRequest body,
             AssetDbContext db,
@@ -211,7 +213,16 @@ public static class ApiEndpoints
         var employees = api.MapGroup("/employees").WithTags("Employees");
         employees.MapGet("/", async (AssetDbContext db, CancellationToken cancellationToken) =>
             Results.Ok(await db.Employees.AsNoTracking().Include(x => x.Department)
-                .OrderBy(x => x.FullName).ToListAsync(cancellationToken)));
+                .OrderBy(x => x.FullName)
+                .Select(x => new EmployeeDto(
+                    x.Id,
+                    x.EmployeeNumber,
+                    x.FullName,
+                    x.Email,
+                    x.DepartmentId,
+                    x.Department!.Name,
+                    x.IsActive))
+                .ToListAsync(cancellationToken)));
         employees.MapPost("/", async (
             CreateEmployeeRequest body,
             AssetDbContext db,
@@ -240,4 +251,3 @@ public static class ApiEndpoints
         return string.IsNullOrWhiteSpace(actor) ? "api-client" : actor[..Math.Min(actor.Length, 120)];
     }
 }
-
