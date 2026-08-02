@@ -1,0 +1,18 @@
+@page
+@model EnterpriseAssetLifecycle.Pages.Assets.ImportModel
+@{
+    ViewData["Title"] = "CSV import";
+}
+<div class="section-heading"><div><p class="eyebrow">Bulk intake</p><h1>Import assets</h1></div></div>
+<form method="post" enctype="multipart/form-data" class="panel form-grid">
+    <label class="full">CSV file<input asp-for="CsvFile" type="file" accept=".csv,text/csv" /><span asp-validation-for="CsvFile"></span></label>
+    <label class="full">Idempotency key<input asp-for="IdempotencyKey" /><small>Reuse the same key only when retrying the exact same file.</small></label>
+    <p class="full muted">Header: assetTag,type,manufacturer,model,serialNumber,departmentCode,purchaseDate</p>
+    <button class="button primary" type="submit">Import CSV</button>
+</form>
+@if (Model.Result is not null)
+{
+    <section class="panel"><h2>Import result</h2><p>@Model.Result.Status · @Model.Result.ImportedRows imported · @Model.Result.SkippedRows skipped · @Model.Result.FailedRows failed</p>
+    @foreach (var error in Model.Result.Errors) { <p class="validation">@error</p> }</section>
+}
+

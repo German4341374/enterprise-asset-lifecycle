@@ -1,0 +1,61 @@
+@page "{id:guid}"
+@model EnterpriseAssetLifecycle.Pages.Assets.DetailsModel
+@{
+    ViewData["Title"] = Model.Asset.AssetTag;
+}
+<div class="section-heading">
+    <div><p class="eyebrow">@Model.Asset.Type · @Model.Asset.Department</p><h1>@Model.Asset.AssetTag</h1><p>@Model.Asset.Manufacturer @Model.Asset.Model · <code>@Model.Asset.SerialNumber</code></p></div>
+    <span class="badge large @Model.Asset.State.ToString().ToLowerInvariant()">@Model.Asset.State</span>
+</div>
+
+<div class="detail-grid">
+    <section class="panel">
+        <h2>Lifecycle actions</h2>
+        @if (Model.Asset.State == AssetState.InStock)
+        {
+            <form method="post" asp-page-handler="Assign" class="action-form">
+                <input type="hidden" asp-for="ExpectedVersion" />
+                <label>Assign to<select asp-for="EmployeeId" asp-items="Model.Employees"><option value="">Select employee</option></select></label>
+                <label>Expected return<input asp-for="ExpectedReturnAt" type="datetime-local" /></label>
+                <button class="button primary" type="submit">Assign asset</button>
+            </form>
+            <form method="post" asp-page-handler="Move" class="action-form">
+                <input type="hidden" asp-for="ExpectedVersion" />
+                <label>Move to department<select asp-for="DepartmentId" asp-items="Model.Departments"></select></label>
+                <button class="button" type="submit">Move</button>
+            </form>
+            <form method="post" asp-page-handler="StartRepair" class="action-form">
+                <input type="hidden" asp-for="ExpectedVersion" />
+                <label>Repair reason<input asp-for="RepairDescription" /></label>
+                <button class="button warning" type="submit">Start repair</button>
+            </form>
+        }
+        @if (Model.Asset.State == AssetState.Assigned)
+        {
+            <p>Assigned to <strong>@Model.Asset.ActiveAssignment?.Employee</strong> since @Model.Asset.ActiveAssignment?.AssignedAt.ToString("u").</p>
+            <form method="post" asp-page-handler="Return"><input type="hidden" asp-for="ExpectedVersion" /><button class="button primary" type="submit">Return asset</button></form>
+        }
+        @if (Model.Asset.State == AssetState.InRepair)
+        {
+            <form method="post" asp-page-handler="CompleteRepair"><input type="hidden" asp-for="ExpectedVersion" /><button class="button primary" type="submit">Complete repair</button></form>
+        }
+        @if (Model.Asset.State is AssetState.InStock or AssetState.InRepair)
+        {
+            <form method="post" asp-page-handler="Retire" class="action-form danger-zone">
+                <input type="hidden" asp-for="ExpectedVersion" />
+                <label>Retirement reason<input asp-for="Reason" /></label>
+                <button class="button danger" type="submit">Retire asset</button>
+            </form>
+        }
+        @if (Model.Asset.State == AssetState.Retired) { <p class="muted">This asset is terminal and no further state transitions are allowed.</p> }
+    </section>
+
+    <section class="panel timeline">
+        <h2>Audit trail</h2>
+        @foreach (var item in Model.Events)
+        {
+            <article><span class="dot"></span><div><strong>@item.Type</strong><p>@item.Actor · @item.OccurredAt.ToString("u")</p><code>@item.Data</code></div></article>
+        }
+    </section>
+</div>
+

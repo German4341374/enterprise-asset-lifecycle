@@ -1,0 +1,48 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<section class="hero">
+    <div>
+        <p class="eyebrow">Operations overview</p>
+        <h1>Know where every device is.</h1>
+        <p>Track custody, repairs, warranties, software and the full immutable lifecycle history.</p>
+    </div>
+    <a class="button primary" asp-page="/Assets/Create">Register an asset</a>
+</section>
+
+<section class="stat-grid" aria-label="Asset metrics">
+    <article><strong>@Model.Dashboard.TotalAssets</strong><span>Total assets</span></article>
+    <article><strong>@Model.Dashboard.Assigned</strong><span>Assigned</span></article>
+    <article><strong>@Model.Dashboard.InStock</strong><span>In stock</span></article>
+    <article><strong>@Model.Dashboard.InRepair</strong><span>In repair</span></article>
+    <article><strong>@Model.Dashboard.ExpiringWarranties</strong><span>Expiring warranties</span></article>
+    <article class="attention"><strong>@Model.Dashboard.OverdueReturns</strong><span>Overdue returns</span></article>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div><p class="eyebrow">Inventory</p><h2>Recent assets</h2></div>
+        <a asp-page="/Assets/Index">View all →</a>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Asset</th><th>Type</th><th>Department</th><th>Status</th><th>Owner</th></tr></thead>
+            <tbody>
+            @foreach (var asset in Model.RecentAssets)
+            {
+                <tr>
+                    <td><a asp-page="/Assets/Details" asp-route-id="@asset.Id"><strong>@asset.AssetTag</strong><small>@asset.Manufacturer @asset.Model</small></a></td>
+                    <td>@asset.Type</td>
+                    <td>@asset.Department</td>
+                    <td><span class="badge @asset.State.ToString().ToLowerInvariant()">@asset.State</span></td>
+                    <td>@(asset.ActiveAssignment?.Employee ?? "—")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+

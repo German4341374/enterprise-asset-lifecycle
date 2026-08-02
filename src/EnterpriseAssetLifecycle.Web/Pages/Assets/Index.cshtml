@@ -1,0 +1,39 @@
+@page
+@model EnterpriseAssetLifecycle.Pages.Assets.IndexModel
+@{
+    ViewData["Title"] = "Assets";
+}
+
+<div class="section-heading">
+    <div><p class="eyebrow">Inventory</p><h1>Assets</h1></div>
+    <div class="actions"><a class="button" href="/api/assets/export.csv">Export CSV</a><a class="button primary" asp-page="Create">Register</a></div>
+</div>
+
+<form method="get" class="filters panel">
+    <label>Search<input asp-for="Search" placeholder="Tag, serial, manufacturer…" /></label>
+    <label>Status<select asp-for="State"><option value="">All states</option>@foreach (var state in Enum.GetValues<AssetState>()) { <option value="@state">@state</option> }</select></label>
+    <label>Type<select asp-for="Type"><option value="">All types</option>@foreach (var type in Enum.GetValues<AssetType>()) { <option value="@type">@type</option> }</select></label>
+    <button class="button primary" type="submit">Filter</button>
+</form>
+
+<section class="panel table-wrap">
+    <table>
+        <thead><tr><th>Tag</th><th>Device</th><th>Serial</th><th>Department</th><th>Status</th><th>Custodian</th></tr></thead>
+        <tbody>
+        @foreach (var asset in Model.Results.Items)
+        {
+            <tr>
+                <td><a asp-page="Details" asp-route-id="@asset.Id"><strong>@asset.AssetTag</strong></a></td>
+                <td>@asset.Type<small>@asset.Manufacturer @asset.Model</small></td>
+                <td><code>@asset.SerialNumber</code></td>
+                <td>@asset.Department</td>
+                <td><span class="badge @asset.State.ToString().ToLowerInvariant()">@asset.State</span></td>
+                <td>@(asset.ActiveAssignment?.Employee ?? "—")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    @if (Model.Results.TotalCount == 0) { <p class="empty">No assets match the selected filters.</p> }
+</section>
+<p class="muted">Page @Model.Results.Page of @Math.Max(1, Model.Results.TotalPages) · @Model.Results.TotalCount result(s)</p>
+

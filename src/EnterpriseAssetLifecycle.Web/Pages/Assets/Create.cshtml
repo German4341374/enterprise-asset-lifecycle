@@ -1,0 +1,18 @@
+@page
+@model EnterpriseAssetLifecycle.Pages.Assets.CreateModel
+@{
+    ViewData["Title"] = "Register asset";
+}
+<div class="section-heading"><div><p class="eyebrow">Inventory intake</p><h1>Register an asset</h1></div></div>
+<form method="post" class="panel form-grid">
+    <div asp-validation-summary="ModelOnly" class="validation"></div>
+    <label>Asset tag<input asp-for="AssetTag" placeholder="AST-1002" /><span asp-validation-for="AssetTag"></span></label>
+    <label>Type<select asp-for="Type" asp-items="Html.GetEnumSelectList<AssetType>()"></select></label>
+    <label>Manufacturer<input asp-for="Manufacturer" /></label>
+    <label>Model<input asp-for="DeviceModel" /></label>
+    <label>Serial number<input asp-for="SerialNumber" /></label>
+    <label>Department<select asp-for="DepartmentId" asp-items="Model.Departments"><option value="">Select department</option></select></label>
+    <label>Purchase date<input asp-for="PurchaseDate" type="date" /></label>
+    <div class="actions full"><a class="button" asp-page="Index">Cancel</a><button class="button primary" type="submit">Register asset</button></div>
+</form>
+

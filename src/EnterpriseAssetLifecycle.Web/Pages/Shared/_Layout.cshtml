@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Enterprise asset lifecycle demonstration" />
+    <title>@ViewData["Title"] · Asset Lifecycle</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" asp-page="/Index"><span>EA</span> Asset Lifecycle</a>
+        <nav aria-label="Main navigation">
+            <a asp-page="/Index">Dashboard</a>
+            <a asp-page="/Assets/Index">Assets</a>
+            <a asp-page="/Assets/Create">Register</a>
+            <a asp-page="/Assets/Import">CSV import</a>
+            <a href="/openapi/v1.json">OpenAPI</a>
+        </nav>
+    </header>
+    <main class="container">
+        @if (TempData["Message"] is string message)
+        {
+            <div class="notice" role="status">@message</div>
+        }
+        @RenderBody()
+    </main>
+    <footer class="container footer">Local portfolio environment · <a href="/health/ready">Readiness</a></footer>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
+
