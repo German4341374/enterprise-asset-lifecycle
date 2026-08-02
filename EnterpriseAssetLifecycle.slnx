@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src/EnterpriseAssetLifecycle.Web/EnterpriseAssetLifecycle.Web.csproj" />
+  <Project Path="tests/EnterpriseAssetLifecycle.UnitTests/EnterpriseAssetLifecycle.UnitTests.csproj" />
+  <Project Path="tests/EnterpriseAssetLifecycle.IntegrationTests/EnterpriseAssetLifecycle.IntegrationTests.csproj" />
+</Solution>
+

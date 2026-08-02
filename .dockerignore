@@ -1,0 +1,11 @@
+.git
+.github
+.tools
+**/bin
+**/obj
+**/TestResults
+tests
+docs
+*.md
+.env
+

@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  quality:
+    name: Format, build, and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+
+      - name: Restore locked dependencies
+        run: dotnet restore EnterpriseAssetLifecycle.slnx --locked-mode
+
+      - name: Verify formatting
+        run: dotnet format EnterpriseAssetLifecycle.slnx --verify-no-changes --no-restore
+
+      - name: Build with warnings as errors
+        run: dotnet build EnterpriseAssetLifecycle.slnx --configuration Release --no-restore
+
+      - name: Run unit tests with coverage
+        run: >-
+          dotnet test tests/EnterpriseAssetLifecycle.UnitTests
+          --configuration Release --no-build
+          --logger "trx;LogFileName=unit.trx"
+          --results-directory TestResults
+          --collect "XPlat Code Coverage"
+
+      - name: Upload unit test evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: unit-test-results
+          path: tests/EnterpriseAssetLifecycle.UnitTests/TestResults/
+          if-no-files-found: warn
+          retention-days: 14
+
+  integration:
+    name: PostgreSQL integration tests
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+
+      - name: Restore locked dependencies
+        run: dotnet restore EnterpriseAssetLifecycle.slnx --locked-mode
+
+      - name: Run Testcontainers integration tests
+        run: >-
+          dotnet test tests/EnterpriseAssetLifecycle.IntegrationTests
+          --configuration Release
+          --logger "trx;LogFileName=integration.trx"
+          --results-directory TestResults
+          --collect "XPlat Code Coverage"
+
+      - name: Upload integration test evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: integration-test-results
+          path: tests/EnterpriseAssetLifecycle.IntegrationTests/TestResults/
+          if-no-files-found: warn
+          retention-days: 14
+
+  container:
+    name: Build application image
+    needs: quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Configure BuildKit
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Build without publishing
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          push: false
+          tags: enterprise-asset-lifecycle:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
