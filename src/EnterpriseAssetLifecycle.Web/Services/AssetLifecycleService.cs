@@ -32,7 +32,7 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
             UpdatedAt = now
         };
 
-        asset.Events.Add(NewEvent(asset.Id, AssetEventType.Registered, actor, correlationId, new
+        db.AssetEvents.Add(NewEvent(asset.Id, AssetEventType.Registered, actor, correlationId, new
         {
             asset.AssetTag,
             asset.SerialNumber,
@@ -71,14 +71,15 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
         asset.State = AssetState.Assigned;
         asset.DepartmentId = employee.DepartmentId;
         asset.UpdatedAt = now;
-        asset.Assignments.Add(new Assignment
+        db.Assignments.Add(new Assignment
         {
+            AssetId = asset.Id,
             EmployeeId = employee.Id,
             AssignedAt = now,
             ExpectedReturnAt = request.ExpectedReturnAt,
             AssignedBy = request.Actor.Trim()
         });
-        asset.Events.Add(NewEvent(asset.Id, AssetEventType.Assigned, request.Actor, correlationId, new
+        db.AssetEvents.Add(NewEvent(asset.Id, AssetEventType.Assigned, request.Actor, correlationId, new
         {
             employee.Id,
             employee.EmployeeNumber,
@@ -118,7 +119,7 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
         assignment.ReturnNotes = request.Notes?.Trim();
         asset.State = AssetState.InStock;
         asset.UpdatedAt = now;
-        asset.Events.Add(NewEvent(asset.Id, AssetEventType.Returned, request.Actor, correlationId, new
+        db.AssetEvents.Add(NewEvent(asset.Id, AssetEventType.Returned, request.Actor, correlationId, new
         {
             assignment.Id,
             assignment.EmployeeId,
@@ -150,7 +151,7 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
         var previousDepartmentId = asset.DepartmentId;
         asset.DepartmentId = request.DepartmentId;
         asset.UpdatedAt = timeProvider.GetUtcNow();
-        asset.Events.Add(NewEvent(asset.Id, AssetEventType.DepartmentMoved, request.Actor, correlationId, new
+        db.AssetEvents.Add(NewEvent(asset.Id, AssetEventType.DepartmentMoved, request.Actor, correlationId, new
         {
             previousDepartmentId,
             request.DepartmentId
@@ -172,14 +173,15 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
         var now = timeProvider.GetUtcNow();
         asset.State = AssetState.InRepair;
         asset.UpdatedAt = now;
-        asset.MaintenanceRecords.Add(new Maintenance
+        db.MaintenanceRecords.Add(new Maintenance
         {
+            AssetId = asset.Id,
             Description = request.Description.Trim(),
             Vendor = request.Vendor?.Trim(),
             Cost = request.Cost,
             StartedAt = now
         });
-        asset.Events.Add(NewEvent(asset.Id, AssetEventType.RepairStarted, request.Actor, correlationId, new
+        db.AssetEvents.Add(NewEvent(asset.Id, AssetEventType.RepairStarted, request.Actor, correlationId, new
         {
             request.Description,
             request.Vendor,
@@ -207,7 +209,7 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
         maintenance.CompletedAt = now;
         asset.State = AssetState.InStock;
         asset.UpdatedAt = now;
-        asset.Events.Add(NewEvent(asset.Id, AssetEventType.RepairCompleted, request.Actor, correlationId, new
+        db.AssetEvents.Add(NewEvent(asset.Id, AssetEventType.RepairCompleted, request.Actor, correlationId, new
         {
             maintenance.Id
         }));
@@ -228,7 +230,7 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
         asset.State = AssetState.Retired;
         asset.RetiredAt = now;
         asset.UpdatedAt = now;
-        asset.Events.Add(NewEvent(asset.Id, AssetEventType.Retired, request.Actor, correlationId, new
+        db.AssetEvents.Add(NewEvent(asset.Id, AssetEventType.Retired, request.Actor, correlationId, new
         {
             request.Reason
         }));
@@ -250,21 +252,26 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
         var asset = await FindForUpdateAsync(assetId, cancellationToken);
         SetExpectedVersion(asset, request.ExpectedVersion);
         var now = timeProvider.GetUtcNow();
-        asset.Warranty ??= new Warranty
+        if (asset.Warranty is null)
         {
-            AssetId = asset.Id,
-            Provider = request.Provider.Trim(),
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
-            CreatedAt = now
-        };
+            asset.Warranty = new Warranty
+            {
+                AssetId = asset.Id,
+                Provider = request.Provider.Trim(),
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
+                CreatedAt = now
+            };
+            db.Warranties.Add(asset.Warranty);
+        }
+
         asset.Warranty.Provider = request.Provider.Trim();
         asset.Warranty.StartDate = request.StartDate;
         asset.Warranty.EndDate = request.EndDate;
         asset.Warranty.CoverageNotes = request.CoverageNotes?.Trim();
         asset.Warranty.UpdatedAt = now;
         asset.UpdatedAt = now;
-        asset.Events.Add(NewEvent(asset.Id, AssetEventType.WarrantyRecorded, request.Actor, correlationId, new
+        db.AssetEvents.Add(NewEvent(asset.Id, AssetEventType.WarrantyRecorded, request.Actor, correlationId, new
         {
             request.Provider,
             request.StartDate,
@@ -288,14 +295,15 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
         }
 
         var now = timeProvider.GetUtcNow();
-        asset.SoftwareInstallations.Add(new SoftwareInstallation
+        db.SoftwareInstallations.Add(new SoftwareInstallation
         {
+            AssetId = asset.Id,
             Name = request.Name.Trim(),
             Version = request.Version.Trim(),
             InstalledAt = now
         });
         asset.UpdatedAt = now;
-        asset.Events.Add(NewEvent(asset.Id, AssetEventType.SoftwareInstalled, request.Actor, correlationId, new
+        db.AssetEvents.Add(NewEvent(asset.Id, AssetEventType.SoftwareInstalled, request.Actor, correlationId, new
         {
             request.Name,
             request.Version
