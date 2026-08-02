@@ -317,7 +317,6 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
             .Include(x => x.Assignments)
             .Include(x => x.MaintenanceRecords)
             .Include(x => x.Warranty)
-            .Include(x => x.Events)
             .Include(x => x.SoftwareInstallations)
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
         ?? throw new ResourceNotFoundException(nameof(Asset), id);
@@ -349,4 +348,3 @@ public sealed class AssetLifecycleService(AssetDbContext db, TimeProvider timePr
             Data = JsonSerializer.Serialize(data)
         };
 }
-
