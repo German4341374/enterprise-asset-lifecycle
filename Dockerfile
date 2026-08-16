@@ -11,7 +11,7 @@ COPY src/EnterpriseAssetLifecycle.Web/ src/EnterpriseAssetLifecycle.Web/
 RUN dotnet publish src/EnterpriseAssetLifecycle.Web/EnterpriseAssetLifecycle.Web.csproj \
     --configuration Release --no-restore --output /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.10 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.11 AS runtime
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
