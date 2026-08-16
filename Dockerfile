@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM mcr.microsoft.com/dotnet/sdk:10.0.302 AS restore
+FROM mcr.microsoft.com/dotnet/sdk:10.0.400 AS restore
 WORKDIR /source
 COPY Directory.Build.props global.json EnterpriseAssetLifecycle.slnx ./
 COPY src/EnterpriseAssetLifecycle.Web/EnterpriseAssetLifecycle.Web.csproj src/EnterpriseAssetLifecycle.Web/
