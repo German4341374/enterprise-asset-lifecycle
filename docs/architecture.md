@@ -4,7 +4,7 @@
 
 The system is a modular monolith: one ASP.NET Core process hosts Razor Pages, REST endpoints, lifecycle commands, read queries, CSV operations, and the warranty background service. PostgreSQL is the only durable dependency.
 
-This shape keeps the portfolio project operationally small while preserving boundaries in code:
+This shape keeps the application operationally small while preserving boundaries in code:
 
 - `Domain` owns entities, state, and transition rules.
 - `Services` owns use cases and transaction boundaries.
@@ -59,4 +59,3 @@ sequenceDiagram
 - PostgreSQL-specific `xmin`, enum types, filtered indexes, and triggers improve correctness but intentionally reduce database portability.
 - Direct dashboard aggregates are clear and current, but may need cached projections at much larger scale.
 - The UI shares use-case services with the API, reducing duplicated rules but coupling both transports to the same deployment cadence.
-

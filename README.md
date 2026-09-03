@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512bd4)](global.json)
 
-`enterprise-asset-lifecycle` is a compact operations system for registering corporate equipment and preserving its custody, repair, warranty, software, and retirement history. It demonstrates explicit business rules, PostgreSQL consistency controls, a REST API, a practical Razor Pages interface, Docker packaging, and real-database integration tests.
+`enterprise-asset-lifecycle` keeps the custody, repair, warranty, software, and retirement history of company equipment in one place. Its main engineering concerns are valid state transitions, transactional assignments, concurrent edits, traceable imports, and tests against a real PostgreSQL database.
 
 The repository contains fictional demonstration records only. It does not require a cloud account or paid service.
 
@@ -273,7 +273,7 @@ The integration suite starts an isolated `postgres:18.4-alpine3.23` container, a
 - [Concurrency, import recovery, indexes, and retention](docs/operations.md)
 - [Five-minute employer demonstration](DEMO.md)
 
-## Limitations and future improvements
+## Known limitations
 
 - Authentication, authorization, approval workflows, and per-department access controls are intentionally excluded.
 - Warranty monitoring records an audit event; it does not send email or external notifications.
@@ -282,7 +282,7 @@ The integration suite starts an isolated `postgres:18.4-alpine3.23` container, a
 - Retention is documented but not automatically enforced.
 - A future version could add barcode scanning, attachment storage, SSO, approval queues, OpenTelemetry traces, and point-in-time inventory reports.
 
-## Interview talking points
+## Design questions
 
 - Why the asset and active assignment form one consistency boundary.
 - How PostgreSQL `xmin` detects stale writes without a custom version column.
@@ -294,4 +294,3 @@ The integration suite starts an isolated `postgres:18.4-alpine3.23` container, a
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
