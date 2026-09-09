@@ -4,9 +4,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e.svg)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512bd4)](global.json)
 
-`enterprise-asset-lifecycle` keeps the custody, repair, warranty, software, and retirement history of company equipment in one place. Its main engineering concerns are valid state transitions, transactional assignments, concurrent edits, traceable imports, and tests against a real PostgreSQL database.
+Keep track of who has a device, which department it belongs to, and what has happened to it.
+You can issue and return equipment, record repairs, check warranties, and retire devices
+while keeping their history.
 
-The repository contains fictional demonstration records only. It does not require a cloud account or paid service.
+CSV imports help with existing inventory lists. The included records are fictional,
+and the app runs locally with PostgreSQL.
 
 ## Features
 
